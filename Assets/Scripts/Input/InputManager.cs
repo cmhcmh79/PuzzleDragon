@@ -11,6 +11,7 @@ public class InputManager : MonoBehaviour
     [Header("참조")]
     [SerializeField] private BoardManager _boardManager;
     [SerializeField] private MatchDetector _matchDetector;
+    [SerializeField] private BoardCleaner _boardCleaner;
 
     /// <summary>현재 드래그 중인 구슬</summary>
     private Orb _selectedOrb;
@@ -22,8 +23,24 @@ public class InputManager : MonoBehaviour
     /// <summary>드래그 중 카메라와의 Z 거리</summary>
     private float _zDistance;
 
+    /// <summary>현재 제거/리필 처리 중인지 여부 (중복 입력 방지)</summary>
+    private bool _isProcessing;
+
+    private void Start()
+    {
+        if (_boardManager == null)
+            Debug.LogError("InputManager: BoardManager 참조가 비어있습니다.");
+        if (_matchDetector == null)
+            Debug.LogError("InputManager: MatchDetector 참조가 비어있습니다.");
+        if (_boardCleaner == null)
+            Debug.LogError("InputManager: BoardCleaner 참조가 비어있습니다.");
+    }
+
     private void Update()
     {
+        // 처리 중이면 입력 무시
+        if (_isProcessing) return;
+
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_STANDALONE_LINUX
         HandleMouseInput();
 #elif UNITY_IOS || UNITY_ANDROID
@@ -135,15 +152,10 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    /// <summary>포인터 해제 - 드래그 종료 후 매칭 감지</summary>
+    /// <summary>포인터 해제 - 드래그 종료 후 매칭 감지 및 제거/리필 처리</summary>
     private void OnPointerUp()
     {
-
-        Debug.Log("[InputManager] OnPointerUp 진입");
-        Debug.Log($"_selectedOrb null? {_selectedOrb == null}");
-        Debug.Log($"_boardManager null? {_boardManager == null}");
-        Debug.Log($"_matchDetector null? {_matchDetector == null}");
-
+        if (_selectedOrb == null) return;
 
         // 충돌 다시 활성화
         _selectedOrb.GetComponent<Collider2D>().enabled = true;
@@ -154,16 +166,19 @@ public class InputManager : MonoBehaviour
 
         _selectedOrb = null;
 
-        // 드래그 종료 후 매칭 감지 실행
-        var matches = _matchDetector.DetectMatches();
-        if (matches.Count > 0)
-        {
-            Debug.Log($"매칭 감지! {matches.Count}개의 구슬이 매칭됨");
-            foreach (var orb in matches)
-            {
-                Debug.Log($"  - {orb.OrbType} at ({orb.Row}, {orb.Col})");
-            }
-        }
+        // 드래그 종료 후 매칭 감지 및 제거/리필 처리
+        if (_matchDetector == null || _boardCleaner == null) return;
+
+        _isProcessing = true;
+        StartCoroutine(_boardCleaner.ProcessMatches());
+        StartCoroutine(WaitForProcessing());
+    }
+
+    /// <summary>BoardCleaner 처리 완료 대기</summary>
+    private System.Collections.IEnumerator WaitForProcessing()
+    {
+        yield return new WaitUntil(() => !_boardCleaner.IsProcessing);
+        _isProcessing = false;
     }
 
     // ============================================================

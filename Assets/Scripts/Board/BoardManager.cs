@@ -19,13 +19,16 @@ public class BoardManager : MonoBehaviour
     /// <summary>보드의 구슬 배열 [행, 열]</summary>
     public Orb[,] Board { get; private set; }
 
+    /// <summary>구슬 프리팹 (BoardCleaner 리필에서 사용)</summary>
+    public GameObject OrbPrefab => _orbPrefab;
+
     private void Start()
     {
         GenerateBoard();
     }
 
     /// <summary>
-    /// 보드를 생성하고 랜더ム 구슬로 채움
+    /// 보드를 생성하고 랜덤 구슬로 채움
     /// </summary>
     private void GenerateBoard()
     {
