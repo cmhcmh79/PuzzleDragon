@@ -10,6 +10,7 @@ public class BoardCleaner : MonoBehaviour
     [Header("참조")]
     [SerializeField] private BoardManager _boardManager;
     [SerializeField] private MatchDetector _matchDetector;
+    [SerializeField] private GameUIManager _gameUIManager;
 
     [Header("타이밍 설정")]
     [SerializeField] private float _removeDelay = 0.3f;   // 구슬 제거 전 대기 시간
@@ -41,6 +42,12 @@ public class BoardCleaner : MonoBehaviour
             _comboCount++;
             Debug.Log($"콤보 {_comboCount}! 매칭된 구슬 {matches.Count}개");
 
+            // UI에 콤보 표시
+            if (_gameUIManager != null)
+            {
+                _gameUIManager.ShowCombo(_comboCount);
+            }
+
             // 제거 전 잠깐 대기 (시각적 확인용)
             yield return new WaitForSeconds(_removeDelay);
 
@@ -55,6 +62,13 @@ public class BoardCleaner : MonoBehaviour
 
             // 빈 공간 리필
             RefillBoard();
+        }
+
+        // 콤보 종료 후 UI 숨김
+        if (_gameUIManager != null)
+        {
+            yield return new WaitForSeconds(1.0f);
+            _gameUIManager.HideCombo();
         }
 
         IsProcessing = false;
