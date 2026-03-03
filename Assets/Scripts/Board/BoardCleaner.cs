@@ -11,6 +11,7 @@ public class BoardCleaner : MonoBehaviour
     [SerializeField] private BoardManager _boardManager;
     [SerializeField] private MatchDetector _matchDetector;
     [SerializeField] private GameUIManager _gameUIManager;
+    [SerializeField] private BattleManager _battleManager;
 
     [Header("타이밍 설정")]
     [SerializeField] private float _removeDelay = 0.3f;   // 구슬 제거 전 대기 시간
@@ -23,6 +24,10 @@ public class BoardCleaner : MonoBehaviour
     /// <summary>현재 콤보 수</summary>
     private int _comboCount;
 
+    /// <summary>전체 매칭 중 속성별 구슬 개수 집계</summary>
+    private Dictionary<OrbType, int> _totalMatchedOrbs = new Dictionary<OrbType, int>();
+
+
     /// <summary>
     /// 매칭 감지 → 제거 → 중력 → 리필 → 연쇄 매칭을 반복하는 메인 처리
     /// </summary>
@@ -30,6 +35,7 @@ public class BoardCleaner : MonoBehaviour
     {
         IsProcessing = true;
         _comboCount = 0;
+        _totalMatchedOrbs.Clear();
 
         while (true)
         {
@@ -48,6 +54,10 @@ public class BoardCleaner : MonoBehaviour
                 _gameUIManager.ShowCombo(_comboCount);
             }
 
+            // 속성별 구슬 개수 집계
+            CountMatchedOrbs(matches);
+
+
             // 제거 전 잠깐 대기 (시각적 확인용)
             yield return new WaitForSeconds(_removeDelay);
 
@@ -64,6 +74,12 @@ public class BoardCleaner : MonoBehaviour
             RefillBoard();
         }
 
+        // 콤보 종료 후 전투 처리
+        if (_battleManager != null && _totalMatchedOrbs.Count > 0)
+        {
+            _battleManager.ProcessAttack(_totalMatchedOrbs, _comboCount);
+        }
+
         // 콤보 종료 후 UI 숨김
         if (_gameUIManager != null)
         {
@@ -77,6 +93,25 @@ public class BoardCleaner : MonoBehaviour
     // ============================================================
     // 구슬 제거
     // ============================================================
+
+    /// <summary>매칭된 구슬을 속성별로 집계</summary>
+    private void CountMatchedOrbs(List<Orb> matches)
+    {
+        foreach (var orb in matches)
+        {
+            OrbType type = orb.OrbType;
+
+            if (_totalMatchedOrbs.ContainsKey(type))
+            {
+                _totalMatchedOrbs[type]++;
+            }
+            else
+            {
+                _totalMatchedOrbs[type] = 1;
+            }
+        }
+    }
+    
 
     /// <summary>매칭된 구슬들을 보드에서 제거</summary>
     private void RemoveOrbs(List<Orb> matches)

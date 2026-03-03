@@ -33,9 +33,17 @@ public class EnemySlot : MonoBehaviour
         UpdateUI();
     }
 
+    /// <summary>적 데이터 반환</summary>
+    public CharacterData GetEnemyData()
+    {
+        return _enemyData;
+    }
+
+
     /// <summary>데미지를 받음</summary>
     public void TakeDamage(int damage)
     {
+        Debug.Log("TakeDamage: " + damage);
         _currentHP -= damage;
         if (_currentHP < 0) _currentHP = 0;
         UpdateUI();
@@ -70,6 +78,10 @@ public class EnemySlot : MonoBehaviour
     /// <summary>UI 갱신</summary>
     private void UpdateUI()
     {
+        
+        
+        Debug.Log("EnemySlot - UpdateUI()");
+
         // HP 바
         if (_hpSlider != null)
         {

@@ -4,6 +4,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class GameUIManager : MonoBehaviour
 {
@@ -26,11 +27,103 @@ public class GameUIManager : MonoBehaviour
     private int _maxHP = 1000;
     private int _currentHP = 1000;
 
+    private List<EnemySlot> _enemySlots = new List<EnemySlot>();
+    private List<AllyCard> _allyCards = new List<AllyCard>();
+
     private void Start()
     {
         UpdateHPBar();
         HideCombo();
     }
+
+
+
+    // ============================================================
+    // 적 슬롯 관리
+    // ============================================================
+
+    /// <summary>적 슬롯 생성 (스테이지 시작 시 호출)</summary>
+    public void SpawnEnemies(CharacterData[] enemies)
+    {
+        // 기존 슬롯 제거
+        ClearEnemySlots();
+
+        // 적 슬롯 생성
+        foreach (var enemyData in enemies)
+        {
+            if (enemyData == null) continue;
+
+            GameObject slotObj = Instantiate(_enemySlotPrefab, _enemyContainer);
+            EnemySlot slot = slotObj.GetComponent<EnemySlot>();
+            slot.Initialize(enemyData);
+            _enemySlots.Add(slot);
+        }
+    }
+
+    /// <summary>모든 적 슬롯 제거</summary>
+    private void ClearEnemySlots()
+    {
+        foreach (var slot in _enemySlots)
+        {
+            Destroy(slot.gameObject);
+        }
+        _enemySlots.Clear();
+    }
+
+    /// <summary>살아있는 적 슬롯 리스트 반환</summary>
+    public List<EnemySlot> GetAliveEnemies()
+    {
+        List<EnemySlot> aliveEnemies = new List<EnemySlot>();
+        foreach (var slot in _enemySlots)
+        {
+            if (slot.IsAlive())
+            {
+                aliveEnemies.Add(slot);
+            }
+        }
+        return aliveEnemies;
+    }
+
+    // ============================================================
+    // 아군 카드 관리
+    // ============================================================
+
+    /// <summary>아군 카드 생성</summary>
+    public void SpawnAllies(CharacterData[] allies)
+    {
+        // 기존 카드 제거
+        ClearAllyCards();
+
+        // 아군 카드 생성
+        foreach (var allyData in allies)
+        {
+            if (allyData == null) continue;
+
+            GameObject cardObj = Instantiate(_allyCardPrefab, _allyContainer);
+            AllyCard card = cardObj.GetComponent<AllyCard>();
+            card.Initialize(allyData);
+            _allyCards.Add(card);
+        }
+    }
+
+    /// <summary>모든 아군 카드 제거</summary>
+    private void ClearAllyCards()
+    {
+        foreach (var card in _allyCards)
+        {
+            Destroy(card.gameObject);
+        }
+        _allyCards.Clear();
+    }
+
+    /// <summary>아군 카드 리스트 반환</summary>
+    public List<AllyCard> GetAllyCards()
+    {
+        return _allyCards;
+    }
+
+
+
 
     // ============================================================
     // HP 바 관리
@@ -56,6 +149,12 @@ public class GameUIManager : MonoBehaviour
         if (_currentHP > _maxHP) _currentHP = _maxHP;
         UpdateHPBar();
     }
+
+    public int GetCurrentHP()
+    {
+        return _currentHP;
+    }
+
 
     private void UpdateHPBar()
     {
